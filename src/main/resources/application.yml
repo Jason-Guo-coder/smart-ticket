@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: smart-ticket
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:smart_ticket}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:smart}
+    password: ${MYSQL_PASSWORD:smart123}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:0}
+      timeout: 3000ms
+
+# MyBatis-Plus
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.smartticket.*.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: auto
+
+# 业务配置（全部外置，ARCHITECTURE §7.8）
+smart-ticket:
+  jwt:
+    secret: ${JWT_SECRET:smart-ticket-dev-secret-key-please-change-in-prod-0123456789}
+    expire-minutes: ${JWT_EXPIRE_MINUTES:720}
+  ai:
+    enabled: ${AI_ENABLED:true}
+    base-url: ${AI_BASE_URL:https://api.anthropic.com}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:claude-haiku-4-5-20251001}
+    timeout-ms: ${AI_TIMEOUT_MS:3000}
+    cache-ttl-minutes: ${AI_CACHE_TTL_MINUTES:30}
+  sla:
+    default-hours: ${SLA_DEFAULT_HOURS:4}
+    scan-cron: ${SLA_SCAN_CRON:0 */1 * * * ?}
+  ratelimit:
+    submit-per-minute: ${RATELIMIT_SUBMIT_PER_MINUTE:10}
+
+logging:
+  level:
+    com.smartticket: debug

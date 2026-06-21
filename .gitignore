@@ -1,2 +1,24 @@
 .DS_Store
 .claude/settings.local.json
+
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+
+# ---- Node / 前端 ----
+node_modules/
+dist/
+.env
+.env.local
+*.log
+
+# ---- 本地配置 ----
+application-local.yml

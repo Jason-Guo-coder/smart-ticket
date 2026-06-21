@@ -39,7 +39,7 @@
 
 | Phase | 模块 | 状态 |
 |---|---|---|
-| P0 | 工程初始化与公共基建（后端骨架 + DB + 前端骨架） | ☐ |
+| P0 | 工程初始化与公共基建（后端骨架 + DB + 前端骨架） | ✅ |
 | P1 | 认证与权限（user + auth + 登录页） | ☐ |
 | P2 | 工单提交 + AI 辅助（ticket 提交 + ai + 提交工单页） | ☐ |
 | P3 | 工单查询与详情（ticket 查询/详情/时间线 + 列表页/详情页） | ☐ |
@@ -60,19 +60,19 @@
 > ③ 不破坏：B6（统一返回/异常）、B10（技术红线，禁 MQ/Cloud/对象存储）。
 > ④ 验收：后端可启动连通 MySQL/Redis；前端可启动渲染 AppShell；公共组件可被引用；四态通用组件就绪。
 
-- [ ] 初始化 Spring Boot（JDK 21）+ MyBatis-Plus + Redis + Security + JWT 依赖（`pom.xml`）
-- [ ] `application.yml`：数据源、Redis、JWT 密钥、AI 超时/key、SLA 时长、限流阈值（全部外置）
-- [ ] `db/schema.sql`：建 10 张表（ARCHITECTURE §4），含 `version`/`deleted`/时间字段
-- [ ] common：`Result` 统一返回体 + `BizException` + 全局 `@RestControllerAdvice`
-- [ ] common：MyBatisPlusConfig（分页、乐观锁、逻辑删除、自动填充时间）
-- [ ] common：RedisConfig + Redis 工具（用于后续限流/锁/排行榜/缓存/黑名单）
-- [ ] common：审计 AOP 写入框架（`@AuditLog` 注解 + 切面，先打通写 `sys_audit_log`）
-- [ ] common：幂等 AOP 框架（`@Idempotent`）+ 滑动窗口限流器
-- [ ] 枚举：`TicketStatus / Priority / Category / RoleCode`
-- [ ] 前端：Vite + Vue3 + Element Plus + 路由 + axios 封装（统一拆 `Result`、错误态拦截）
-- [ ] 前端：设计令牌落地（CSS 变量/主题，DESIGN §2）+ AppShell（侧边栏 248 + 顶栏 76 + blob 背景）
-- [ ] 前端：通用三态组件（Loading 骨架 / Empty 空态 / Error 重试），供后续页面复用
-- [ ] **四态自检**（基建层：启动正常 / 接口异常被 `Result` 包装 / 前端错误拦截生效）
+- [x] 初始化 Spring Boot（JDK 21）+ MyBatis-Plus + Redis + Security + JWT 依赖（`pom.xml`）
+- [x] `application.yml`：数据源、Redis、JWT 密钥、AI 超时/key、SLA 时长、限流阈值（全部外置）
+- [x] `db/schema.sql`：建 10 张表（ARCHITECTURE §4），含 `version`/`deleted`/时间字段
+- [x] common：`Result` 统一返回体 + `BizException` + 全局 `@RestControllerAdvice`
+- [x] common：MyBatisPlusConfig（分页、乐观锁、逻辑删除、自动填充时间）
+- [x] common：RedisConfig + Redis 工具（用于后续限流/锁/排行榜/缓存/黑名单）
+- [x] common：审计 AOP 写入框架（`@AuditLog` 注解 + 切面，先打通写 `sys_audit_log`）
+- [x] common：幂等 AOP 框架（`@Idempotent`）+ 滑动窗口限流器
+- [x] 枚举：`TicketStatus / Priority / Category / RoleCode`
+- [x] 前端：Vite + Vue3 + Element Plus + 路由 + axios 封装（统一拆 `Result`、错误态拦截）
+- [x] 前端：设计令牌落地（CSS 变量/主题，DESIGN §2）+ AppShell（侧边栏 248 + 顶栏 76 + blob 背景）
+- [x] 前端：通用三态组件（Loading 骨架 / Empty 空态 / Error 重试），供后续页面复用
+- [x] **四态自检**（后端 `mvn compile` + 启动连通 DB/Redis；前端 `npm run build` + dev server 200；三态组件演示就绪）
 - [ ] **提交并推送**：`chore: 初始化工程骨架与公共基建`
 
 ---
@@ -230,7 +230,7 @@
 - [ ] 端到端走查：提交 → AI 建议 → 派单 → 处理记录方案 → 评价 → 看板统计变化
 - [ ] 分项核对：权限/状态机/并发/AI容错/审计/SLA/幂等 逐条过（对照 ARCHITECTURE §9.2）
 - [ ] 全局四态复检：主流程/加载/空/报错在各页一致
-- [ ] 准备演示数据与 Demo 脚本（PRD §6.5 风格）
+- [ ] 准备演示数据与 Demo 脚本（按 PRD §3.1 黄金路径）
 - [ ] **提交并推送**：`chore: 黄金路径联调与收尾`
 
 ---

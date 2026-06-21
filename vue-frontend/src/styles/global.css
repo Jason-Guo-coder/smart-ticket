@@ -1,0 +1,100 @@
+/* 全局基础样式 + 玻璃拟态工具类 + blob 背景（DESIGN §2.5-2.7） */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+  color: var(--apple-text);
+  background: var(--page-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 玻璃卡片 */
+.glass-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* hover-lift（DESIGN §5） */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+/* 彩色发光背景 blob（DESIGN §2.7） */
+.blob-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.4;
+}
+.blob-blue {
+  width: 460px;
+  height: 460px;
+  top: -120px;
+  left: -160px;
+  background: #8db4ff;
+}
+.blob-purple {
+  width: 380px;
+  height: 380px;
+  top: 80px;
+  right: -120px;
+  background: #c79af0;
+  opacity: 0.36;
+}
+.blob-pink {
+  width: 340px;
+  height: 340px;
+  bottom: -100px;
+  left: 18%;
+  background: #ffb8d1;
+  opacity: 0.32;
+}
+.blob-orange {
+  width: 300px;
+  height: 300px;
+  bottom: -80px;
+  right: 12%;
+  background: #ffdc9e;
+  opacity: 0.36;
+}
+
+/* 页面进入动画（DESIGN §5 页面切换） */
+.page-enter {
+  animation: fadeInUp 0.4s ease-out;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
