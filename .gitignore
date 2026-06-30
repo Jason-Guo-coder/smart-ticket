@@ -22,3 +22,6 @@ dist/
 
 # ---- 本地配置 ----
 application-local.yml
+
+# ---- 一键脚本运行时目录 ----
+.run/
