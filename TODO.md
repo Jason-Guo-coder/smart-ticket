@@ -40,7 +40,7 @@
 | Phase | 模块 | 状态 |
 |---|---|---|
 | P0 | 工程初始化与公共基建（后端骨架 + DB + 前端骨架） | ✅ |
-| P1 | 认证与权限（user + auth + 登录页） | ☐ |
+| P1 | 认证与权限（user + auth + 登录页） | ✅ |
 | P2 | 工单提交 + AI 辅助（ticket 提交 + ai + 提交工单页） | ☐ |
 | P3 | 工单查询与详情（ticket 查询/详情/时间线 + 列表页/详情页） | ☐ |
 | P4 | 工单处理与状态机（ticket 处理 + 待办页/处理页） | ☐ |
@@ -73,7 +73,7 @@
 - [x] 前端：设计令牌落地（CSS 变量/主题，DESIGN §2）+ AppShell（侧边栏 248 + 顶栏 76 + blob 背景）
 - [x] 前端：通用三态组件（Loading 骨架 / Empty 空态 / Error 重试），供后续页面复用
 - [x] **四态自检**（后端 `mvn compile` + 启动连通 DB/Redis；前端 `npm run build` + dev server 200；三态组件演示就绪）
-- [ ] **提交并推送**：`chore: 初始化工程骨架与公共基建`
+- [x] **提交并推送**：`chore: 初始化工程骨架与公共基建`（已推送 46bc70e）
 
 ---
 
@@ -84,12 +84,12 @@
 > ③ 不破坏：B4（RBAC 鉴权）、B6、B7（登录写审计）。
 > ④ 验收：三角色账号可登录拿 JWT；越权接口返回 403；登出后 token 失效；登录写审计日志。
 
-- [ ] user：实体 + Mapper（SysUser/Role/Permission/RolePermission）+ RBAC 初始化数据（schema 内）
-- [ ] auth：登录（校验密码 BCrypt → 签发 JWT）、登出（token 入 Redis 黑名单）
-- [ ] common/security：JWT 过滤器 + Spring Security RBAC（角色—权限—URI 映射，接口级鉴权）
-- [ ] auth：登录/登出接口加 `@AuditLog`
-- [ ] 前端：登录页（DESIGN 登录态）+ 路由守卫 + 角色侧边栏渲染 + 登出
-- [ ] **四态测试**：登录成功跳转 / 登录中 loading / 账号密码错误提示 / 越权 403 提示
+- [x] user：实体 + Mapper（SysUser/Role/Permission）+ RBAC 初始化数据（schema 种子 + DataInitializer 种用户）
+- [x] auth：登录（校验密码 BCrypt → 签发 JWT）、登出（token 入 Redis 黑名单）
+- [x] common/security：JWT 过滤器 + Spring Security RBAC（@PreAuthorize 权限码，接口级鉴权）
+- [x] auth：登录/登出接口加 `@AuditLog`
+- [x] 前端：登录页（DESIGN 登录态）+ 路由守卫 + 角色侧边栏渲染 + 登出
+- [x] **四态测试**：登录成功(200+JWT) / 登录中 loading / 账密错误(400) / 越权 403、未登录 401（curl 实测 + 代理联通）
 - [ ] **提交并推送**：`feat(auth): 登录鉴权与RBAC接口权限`
 
 ---
@@ -232,6 +232,15 @@
 - [ ] 全局四态复检：主流程/加载/空/报错在各页一致
 - [ ] 准备演示数据与 Demo 脚本（按 PRD §3.1 黄金路径）
 - [ ] **提交并推送**：`chore: 黄金路径联调与收尾`
+
+---
+
+## Polish Backlog（非阻塞打磨项，P10 统一处理）
+
+> 主干推进中遇到的「能用但可更好」的细节，记于此，不打断当前 Phase，统一在 P10 精修。
+
+- [ ] 登录审计：登录成功时记录登录用户名/ID（当前匿名阶段 operator 为 NULL，仅记 action/result/ip）。来源：Phase 1。
+- [ ] 前端构建 chunk 体积告警（Element Plus 较大）：按需引入或分包优化。来源：Phase 0。
 
 ---
 

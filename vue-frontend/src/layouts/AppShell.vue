@@ -52,7 +52,14 @@
             <span>搜索工单号 / 关键词</span>
           </div>
           <div class="topbar__bell"><el-icon><Bell /></el-icon></div>
-          <div class="topbar__avatar"></div>
+          <el-dropdown trigger="click" @command="onCommand">
+            <div class="topbar__avatar"></div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </header>
 
@@ -65,9 +72,27 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { logout } from '@/api/auth'
 
 const route = useRoute()
+const router = useRouter()
+
+async function onCommand(cmd) {
+  if (cmd === 'logout') {
+    try {
+      await logout()
+    } catch (e) {
+      // 即便后端登出失败，前端也清理并跳登录
+    }
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    localStorage.removeItem('realName')
+    ElMessage.success('已退出登录')
+    router.push('/login')
+  }
+}
 
 // Phase 1 由登录写入；此处兜底
 const role = localStorage.getItem('role') || 'EMPLOYEE'

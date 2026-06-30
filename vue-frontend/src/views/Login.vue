@@ -48,37 +48,43 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { login } from '@/api/auth'
 
 const router = useRouter()
 const loading = ref(false)
 const form = reactive({ username: '', password: '' })
+// 演示账号（密码统一 123456）
 const roles = [
-  { code: 'EMPLOYEE', label: '报修人' },
-  { code: 'ENGINEER', label: '工程师' },
-  { code: 'ADMIN', label: '管理员' }
+  { code: 'EMPLOYEE', label: '报修人', username: 'liming' },
+  { code: 'ENGINEER', label: '工程师', username: 'zhangwei' },
+  { code: 'ADMIN', label: '管理员', username: 'wangfang' }
 ]
 
-// Phase 0：占位登录，打通到 AppShell。Phase 1 接 /api/auth/login 真实鉴权。
+async function doLogin(username, password) {
+  loading.value = true
+  try {
+    const data = await login({ username, password })
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('role', data.role)
+    localStorage.setItem('realName', data.realName || data.username)
+    ElMessage.success('登录成功')
+    router.push('/app/home')
+  } finally {
+    loading.value = false
+  }
+}
+
 function onLogin() {
   if (!form.username || !form.password) {
     ElMessage.warning('请输入用户名和密码')
     return
   }
-  loading.value = true
-  setTimeout(() => {
-    localStorage.setItem('token', 'dev-placeholder-token')
-    localStorage.setItem('role', 'EMPLOYEE')
-    localStorage.setItem('realName', form.username)
-    loading.value = false
-    router.push('/app/home')
-  }, 400)
+  doLogin(form.username, form.password)
 }
 
 function quickLogin(roleCode) {
-  localStorage.setItem('token', 'dev-placeholder-token')
-  localStorage.setItem('role', roleCode)
-  localStorage.setItem('realName', roles.find((r) => r.code === roleCode).label)
-  router.push('/app/home')
+  const r = roles.find((x) => x.code === roleCode)
+  doLogin(r.username, '123456')
 }
 </script>
 

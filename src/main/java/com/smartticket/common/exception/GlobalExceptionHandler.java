@@ -3,12 +3,14 @@ package com.smartticket.common.exception;
 import com.smartticket.common.result.Result;
 import com.smartticket.common.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
@@ -31,11 +33,13 @@ public class GlobalExceptionHandler {
         return Result.fail(ResultCode.BAD_REQUEST.getCode(), msg);
     }
 
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
     public Result<Void> handleAccessDenied(AccessDeniedException e) {
         return Result.fail(ResultCode.FORBIDDEN);
     }
 
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(AuthenticationException.class)
     public Result<Void> handleAuth(AuthenticationException e) {
         return Result.fail(ResultCode.UNAUTHORIZED);
