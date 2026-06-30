@@ -41,7 +41,7 @@
 |---|---|---|
 | P0 | 工程初始化与公共基建（后端骨架 + DB + 前端骨架） | ✅ |
 | P1 | 认证与权限（user + auth + 登录页） | ✅ |
-| P2 | 工单提交 + AI 辅助（ticket 提交 + ai + 提交工单页） | ☐ |
+| P2 | 工单提交 + AI 辅助（ticket 提交 + ai + 提交工单页） | ✅ |
 | P3 | 工单查询与详情（ticket 查询/详情/时间线 + 列表页/详情页） | ☐ |
 | P4 | 工单处理与状态机（ticket 处理 + 待办页/处理页） | ☐ |
 | P5 | 派单（dispatch + 派单页，含并发安全） | ☐ |
@@ -90,7 +90,7 @@
 - [x] auth：登录/登出接口加 `@AuditLog`
 - [x] 前端：登录页（DESIGN 登录态）+ 路由守卫 + 角色侧边栏渲染 + 登出
 - [x] **四态测试**：登录成功(200+JWT) / 登录中 loading / 账密错误(400) / 越权 403、未登录 401（curl 实测 + 代理联通）
-- [ ] **提交并推送**：`feat(auth): 登录鉴权与RBAC接口权限`
+- [x] **提交并推送**：`feat(auth): 登录鉴权与RBAC接口权限`（已推送 3b8484c）
 
 ---
 
@@ -101,13 +101,13 @@
 > ③ 不破坏：B2（流转写日志）、B5（AI 降级兜底）、B9（提交幂等+限流）、B11（AI 单一入口）。
 > ④ 验收：提交成功生成工单号、状态待派单、写首条 ticket_log；AI 正常返回结构化建议；AI 超时/非法 JSON 自动降级且工单照常入库。
 
-- [ ] ticket：提交接口（标题/描述/图片URL）+ 工单号生成（Redis 原子自增）+ 首条 ticket_log
-- [ ] ticket：提交接口加幂等 `@Idempotent` + 滑动窗口限流
-- [ ] ai：`AiAssistService` 入口 + PromptBuilder + AiHttpClient（超时 3s）+ AiResultParser（校验+重试1次）
-- [ ] ai：Redis 结果缓存（key=hash(title+content)）+ 失败降级返回空建议
-- [ ] ai：相似工单（类别 + 关键词 LIKE，Top N）
-- [ ] 前端：提交工单页（表单 + AI 智能分析面板，含分析中/已完成/已降级三态）
-- [ ] **四态测试**：提交主流程 / AI 分析中 loading / 相似工单为空 / AI 失败降级（不阻断）+ 提交校验报错
+- [x] ticket：提交接口（标题/描述/图片URL）+ 工单号生成（Redis 原子自增）+ 首条 ticket_log
+- [x] ticket：提交接口加幂等 `@Idempotent` + 滑动窗口限流
+- [x] ai：`AiAssistService` 入口 + PromptBuilder + AiHttpClient（DeepSeek/OpenAI，超时可配）+ AiResultParser（校验+重试1次）
+- [x] ai：Redis 结果缓存（key=md5(title+content)，仅缓存非降级）+ 失败降级返回空建议
+- [x] ai：相似工单（有类别按类别、降级按关键词 LIKE，Top N）
+- [x] 前端：提交工单页（表单 + AI 智能分析面板，含待分析/分析中/已完成/已降级状态）
+- [x] **四态测试**：提交200+工单号 / AI分析中loading / 相似工单空态 / AI降级不阻断 + 校验报错 + RBAC403 + 幂等409（curl+真实DeepSeek+代理实测）
 - [ ] **提交并推送**：`feat(ticket,ai): 工单提交与AI辅助分析`
 
 ---

@@ -14,7 +14,13 @@ const routes = [
     children: [
       // 各业务页将在后续 Phase 挂载到此处
       { path: '', redirect: '/app/home' },
-      { path: 'home', name: 'home', component: () => import('@/views/Placeholder.vue') }
+      { path: 'home', name: 'home', component: () => import('@/views/Placeholder.vue') },
+      {
+        path: 'submit',
+        name: 'submit',
+        component: () => import('@/views/employee/SubmitTicket.vue'),
+        meta: { title: '提交工单' }
+      }
     ]
   }
 ]

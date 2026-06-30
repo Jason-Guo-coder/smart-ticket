@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: smart-ticket
+  # 可选导入本地私密配置（application-local.yml 已 gitignore，存放 AI key 等密钥，仓库不含密钥）
+  config:
+    import: optional:classpath:application-local.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:smart_ticket}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -36,10 +39,10 @@ smart-ticket:
     expire-minutes: ${JWT_EXPIRE_MINUTES:720}
   ai:
     enabled: ${AI_ENABLED:true}
-    base-url: ${AI_BASE_URL:https://api.anthropic.com}
+    base-url: ${AI_BASE_URL:https://api.deepseek.com}
     api-key: ${AI_API_KEY:}
-    model: ${AI_MODEL:claude-haiku-4-5-20251001}
-    timeout-ms: ${AI_TIMEOUT_MS:3000}
+    model: ${AI_MODEL:deepseek-chat}
+    timeout-ms: ${AI_TIMEOUT_MS:8000}
     cache-ttl-minutes: ${AI_CACHE_TTL_MINUTES:30}
   sla:
     default-hours: ${SLA_DEFAULT_HOURS:4}
