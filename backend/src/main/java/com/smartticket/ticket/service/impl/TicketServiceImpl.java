@@ -248,6 +248,18 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
+    public void rate(Long ticketId, Long userId, String role) {
+        Ticket t = load(ticketId);
+        if (TicketStatus.RATED.name().equals(t.getStatus())) {
+            throw new BizException(ResultCode.CONFLICT, "该工单已评价");
+        }
+        requireStatus(t, TicketStatus.DONE, "工单未完成，暂不能评价");
+        requireCreatorOrAdmin(t, userId, role);
+        transition(t, TicketStatus.RATED, "评价", userId, null, false, "报修人评价，工单关闭");
+    }
+
+    @Override
     public List<TicketListItemVO> listPending() {
         List<Ticket> pending = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
                 .eq(Ticket::getStatus, TicketStatus.PENDING.name())

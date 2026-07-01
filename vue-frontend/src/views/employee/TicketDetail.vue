@@ -44,6 +44,30 @@
         </div>
       </div>
 
+      <!-- 报修人评价入口（已完成时） -->
+      <div v-if="canEvaluate" class="glass-card verify">
+        <div class="verify__text">
+          <strong>工单已完成</strong>
+          <span>对本次服务打个分吧</span>
+        </div>
+        <div class="verify__acts">
+          <el-button type="primary" @click="evalVisible = true">评价服务</el-button>
+        </div>
+      </div>
+
+      <!-- 已评价展示 -->
+      <div v-if="d.evalScore" class="glass-card block">
+        <h3>服务评价</h3>
+        <div class="rated">
+          <el-rate :model-value="d.evalScore" disabled />
+          <span class="rated__score">{{ d.evalScore }}.0</span>
+        </div>
+        <div v-if="evalTagList.length" class="rated__tags">
+          <span v-for="t in evalTagList" :key="t" class="rated__tag">{{ t }}</span>
+        </div>
+        <p v-if="d.evalComment" class="rated__comment">{{ d.evalComment }}</p>
+      </div>
+
       <!-- 问题描述 -->
       <div class="glass-card block">
         <h3>问题描述</h3>
@@ -90,18 +114,58 @@
         <StateEmpty v-else text="工单处理完成后将展示解决方案" />
       </div>
     </template>
+
+    <!-- 评价弹窗 -->
+    <el-dialog v-model="evalVisible" title="服务评价" width="440px">
+      <div class="eval-form">
+        <div class="eval-row">
+          <span class="eval-label">评分</span>
+          <el-rate v-model="evalForm.score" />
+        </div>
+        <div class="eval-row eval-row--top">
+          <span class="eval-label">标签</span>
+          <div class="eval-tags">
+            <span
+              v-for="t in TAG_OPTIONS"
+              :key="t"
+              class="eval-tag"
+              :class="{ 'eval-tag--on': evalForm.tags.includes(t) }"
+              @click="toggleTag(t)"
+            >{{ t }}</span>
+          </div>
+        </div>
+        <div class="eval-row eval-row--top">
+          <span class="eval-label">评论</span>
+          <el-input
+            v-model="evalForm.comment"
+            type="textarea"
+            :rows="3"
+            maxlength="512"
+            show-word-limit
+            placeholder="说说你的感受（可选）"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="evalVisible = false">取消</el-button>
+        <el-button type="primary" :loading="evalSubmitting" @click="onEvaluate">提交评价</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ticketDetail, verifyPass, verifyReject } from '@/api/ticket'
+import { evaluateTicket } from '@/api/evaluation'
 import { statusMeta, slaMeta } from '@/utils/ticket'
 import StateLoading from '@/components/state/StateLoading.vue'
 import StateEmpty from '@/components/state/StateEmpty.vue'
 import StateError from '@/components/state/StateError.vue'
+
+const TAG_OPTIONS = ['响应及时', '解决彻底', '态度好', '专业负责', '沟通顺畅']
 
 const route = useRoute()
 const role = localStorage.getItem('role') || 'EMPLOYEE'
@@ -110,10 +174,47 @@ const status = ref('loading') // loading | ready | error
 const errText = ref('工单详情加载失败，请稍后再试')
 const verifying = ref(false)
 
+const evalVisible = ref(false)
+const evalSubmitting = ref(false)
+const evalForm = reactive({ score: 5, tags: [], comment: '' })
+
 // 待验收且本人报修 / 管理员 → 可验收（后端再校验 creator/admin）
 const canVerify = computed(
   () => d.value.status === 'ACCEPTING' && (role === 'EMPLOYEE' || role === 'ADMIN')
 )
+// 已完成且本人报修 / 管理员 → 可评价
+const canEvaluate = computed(
+  () => d.value.status === 'DONE' && (role === 'EMPLOYEE' || role === 'ADMIN')
+)
+const evalTagList = computed(() => (d.value.evalTags || '').split(',').filter(Boolean))
+
+function toggleTag(t) {
+  const i = evalForm.tags.indexOf(t)
+  if (i >= 0) evalForm.tags.splice(i, 1)
+  else evalForm.tags.push(t)
+}
+
+async function onEvaluate() {
+  if (!evalForm.score) {
+    ElMessage.warning('请先打分')
+    return
+  }
+  evalSubmitting.value = true
+  try {
+    await evaluateTicket(route.params.id, {
+      score: evalForm.score,
+      tags: evalForm.tags.join(','),
+      comment: evalForm.comment || undefined
+    })
+    ElMessage.success('感谢评价')
+    evalVisible.value = false
+    await load()
+  } catch (e) {
+    await load()
+  } finally {
+    evalSubmitting.value = false
+  }
+}
 
 // 每秒刷新，驱动 SLA 倒计时
 const nowTick = ref(Date.now())
@@ -293,6 +394,76 @@ load()
 .verify__acts {
   display: flex;
   gap: 12px;
+}
+/* 已评价展示 */
+.rated {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rated__score {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f5a623;
+}
+.rated__tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.rated__tag {
+  font-size: 12px;
+  color: var(--apple-blue);
+  background: rgba(0, 113, 227, 0.08);
+  padding: 3px 10px;
+  border-radius: var(--radius-badge);
+}
+.rated__comment {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #3a3a3c;
+}
+/* 评价弹窗 */
+.eval-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.eval-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.eval-row--top {
+  align-items: flex-start;
+}
+.eval-label {
+  width: 40px;
+  font-size: 14px;
+  color: var(--apple-darkgray);
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.eval-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.eval-tag {
+  font-size: 13px;
+  color: var(--apple-darkgray);
+  background: var(--apple-gray);
+  padding: 4px 12px;
+  border-radius: var(--radius-badge);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.eval-tag--on {
+  color: var(--apple-blue);
+  background: rgba(0, 113, 227, 0.1);
+  border-color: rgba(0, 113, 227, 0.4);
 }
 .content {
   font-size: 14px;

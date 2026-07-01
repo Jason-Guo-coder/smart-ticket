@@ -32,6 +32,12 @@ public class TicketDetailVO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
+    /** 评价（已评价工单，否则为空）。 */
+    private Integer evalScore;
+    private String evalTags;
+    private String evalComment;
+    private LocalDateTime evalTime;
+
     /** 时间线（按发生时间升序）。 */
     private List<TicketLogVO> timeline;
     /** 解决方案（按提交时间升序，可能多条）。 */

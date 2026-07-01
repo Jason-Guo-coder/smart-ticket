@@ -41,10 +41,13 @@ public interface TicketMapper extends BaseMapper<Ticket> {
                    t.creator_id AS creatorId, cu.real_name AS creatorName,
                    t.assignee_id AS assigneeId, au.real_name AS assigneeName,
                    t.sla_deadline AS slaDeadline, t.sla_overdue AS slaOverdue,
-                   t.create_time AS createTime, t.update_time AS updateTime
+                   t.create_time AS createTime, t.update_time AS updateTime,
+                   ev.score AS evalScore, ev.tags AS evalTags,
+                   ev.comment AS evalComment, ev.create_time AS evalTime
             FROM ticket t
             LEFT JOIN sys_user cu ON cu.id = t.creator_id
             LEFT JOIN sys_user au ON au.id = t.assignee_id
+            LEFT JOIN evaluation ev ON ev.ticket_id = t.id
             WHERE t.id = #{id} AND t.deleted = 0
             """)
     TicketDetailVO selectDetail(@Param("id") Long id);

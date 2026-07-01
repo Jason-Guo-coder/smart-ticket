@@ -54,6 +54,12 @@ public interface TicketService {
     /** 验收驳回：待验收→处理中，退回原受理人（仅报修人本人/ADMIN）。 */
     void verifyReject(Long ticketId, Long userId, String role, RemarkRequest req);
 
+    /**
+     * 评价流转：已完成→已评价（仅报修人本人/ADMIN），同事务写日志（B1/B2）。
+     * 由 evaluation 模块在同一事务内调用，与评价落库原子提交。
+     */
+    void rate(Long ticketId, Long userId, String role);
+
     /** 全部待派单工单（派单页，按优先级降序）。 */
     List<TicketListItemVO> listPending();
 
