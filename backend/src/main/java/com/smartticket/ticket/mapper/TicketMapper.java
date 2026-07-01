@@ -3,6 +3,7 @@ package com.smartticket.ticket.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.smartticket.ai.model.SimilarTicket;
 import com.smartticket.ticket.entity.Ticket;
+import com.smartticket.ticket.vo.TicketDetailVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -11,6 +12,21 @@ import java.util.List;
 
 @Mapper
 public interface TicketMapper extends BaseMapper<Ticket> {
+
+    /** 工单详情表头（关联报修人/受理人姓名；标签与时间线在服务层补齐）。 */
+    @Select("""
+            SELECT t.id, t.ticket_no AS ticketNo, t.title, t.content, t.image_url AS imageUrl,
+                   t.category, t.priority, t.status,
+                   t.creator_id AS creatorId, cu.real_name AS creatorName,
+                   t.assignee_id AS assigneeId, au.real_name AS assigneeName,
+                   t.sla_deadline AS slaDeadline, t.sla_overdue AS slaOverdue,
+                   t.create_time AS createTime, t.update_time AS updateTime
+            FROM ticket t
+            LEFT JOIN sys_user cu ON cu.id = t.creator_id
+            LEFT JOIN sys_user au ON au.id = t.assignee_id
+            WHERE t.id = #{id} AND t.deleted = 0
+            """)
+    TicketDetailVO selectDetail(@Param("id") Long id);
 
     /**
      * 相似历史工单（MVP：类别 + 关键词 LIKE，取已完成且有解决方案的，Top N）。

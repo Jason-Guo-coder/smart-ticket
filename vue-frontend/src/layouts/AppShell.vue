@@ -101,7 +101,7 @@ const user = { name: localStorage.getItem('realName') || '演示用户' }
 const NAV = {
   EMPLOYEE: [
     { path: '/app/submit', label: '提交工单', icon: 'Plus' },
-    { path: '/app/home', label: '我的工单', icon: 'List' }
+    { path: '/app/tickets', label: '我的工单', icon: 'List' }
   ],
   ENGINEER: [
     { path: '/app/home', label: '待办工单', icon: 'Files' },

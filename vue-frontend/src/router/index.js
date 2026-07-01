@@ -20,6 +20,18 @@ const routes = [
         name: 'submit',
         component: () => import('@/views/employee/SubmitTicket.vue'),
         meta: { title: '提交工单' }
+      },
+      {
+        path: 'tickets',
+        name: 'my-tickets',
+        component: () => import('@/views/employee/MyTickets.vue'),
+        meta: { title: '我的工单' }
+      },
+      {
+        path: 'tickets/:id',
+        name: 'ticket-detail',
+        component: () => import('@/views/employee/TicketDetail.vue'),
+        meta: { title: '工单详情' }
       }
     ]
   }
