@@ -44,6 +44,12 @@ const routes = [
         name: 'handle-ticket',
         component: () => import('@/views/engineer/HandleTicket.vue'),
         meta: { title: '工单处理' }
+      },
+      {
+        path: 'dispatch',
+        name: 'dispatch',
+        component: () => import('@/views/admin/Dispatch.vue'),
+        meta: { title: '派单管理' }
       }
     ]
   }

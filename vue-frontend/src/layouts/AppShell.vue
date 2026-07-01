@@ -109,7 +109,7 @@ const NAV = {
   ],
   ADMIN: [
     { path: '/app/home', label: '工单看板', icon: 'DataBoard' },
-    { path: '/app/home', label: '派单管理', icon: 'Share' },
+    { path: '/app/dispatch', label: '派单管理', icon: 'Share' },
     { path: '/app/home', label: '工程师管理', icon: 'User' },
     { path: '/app/home', label: '用户与角色', icon: 'Lock' },
     { path: '/app/home', label: '审计日志', icon: 'Document' }

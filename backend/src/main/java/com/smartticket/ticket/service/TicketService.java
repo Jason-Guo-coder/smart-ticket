@@ -33,8 +33,11 @@ public interface TicketService {
     /** 工程师待办页数据（统计条 + 待办卡片）。 */
     TodoVO getTodo(Long engineerId);
 
-    /** AI 参考：与本工单同类别的历史已解决工单（处理页参考）。 */
-    List<SimilarTicket> handleReference(Long ticketId);
+    /**
+     * AI 参考：与本工单同类别的历史已解决工单（处理页参考）。
+     * 访问控制：ADMIN、受理人、或待派单工单（任一工程师抢单前可参考）方可查询。
+     */
+    List<SimilarTicket> handleReference(Long ticketId, Long userId, String role);
 
     /** 接单：待派单→处理中，占派为本人（乐观锁防并发抢单）。 */
     void accept(Long ticketId, Long engineerId);
@@ -50,4 +53,16 @@ public interface TicketService {
 
     /** 验收驳回：待验收→处理中，退回原受理人（仅报修人本人/ADMIN）。 */
     void verifyReject(Long ticketId, Long userId, String role, RemarkRequest req);
+
+    /** 全部待派单工单（派单页，按优先级降序）。 */
+    List<TicketListItemVO> listPending();
+
+    /** 工单类别（供派单自动分配按类别推荐工程师）。 */
+    String categoryOf(Long ticketId);
+
+    /**
+     * 派单指派：待派单→处理中，占派为指定工程师，走中央状态机（B1/B2）。
+     * 由 dispatch 模块在分布式锁 + 事务内调用（B3）。
+     */
+    void assignByDispatch(Long ticketId, Long engineerId, Long operatorId, String remark);
 }

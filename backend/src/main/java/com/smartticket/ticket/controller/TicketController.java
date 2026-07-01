@@ -83,7 +83,7 @@ public class TicketController {
     @PreAuthorize("hasAuthority('ticket:handle')")
     @GetMapping("/{id}/handle/similar")
     public Result<List<SimilarTicket>> handleSimilar(@PathVariable Long id) {
-        return Result.ok(ticketService.handleReference(id));
+        return Result.ok(ticketService.handleReference(id, UserContext.getUserId(), UserContext.getRole()));
     }
 
     /** 接单：待派单→处理中（并发抢单只成功一次）。 */
