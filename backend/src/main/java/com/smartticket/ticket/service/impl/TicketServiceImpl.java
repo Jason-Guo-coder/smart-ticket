@@ -1,18 +1,23 @@
 package com.smartticket.ticket.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartticket.ai.AiAssistService;
 import com.smartticket.ai.model.AiSuggestion;
+import com.smartticket.ai.model.SimilarTicket;
 import com.smartticket.common.exception.BizException;
 import com.smartticket.common.result.PageResult;
 import com.smartticket.common.result.ResultCode;
 import com.smartticket.common.util.RedisUtil;
+import com.smartticket.ticket.dto.RemarkRequest;
+import com.smartticket.ticket.dto.SolutionSubmitRequest;
 import com.smartticket.ticket.dto.SubmitTicketRequest;
 import com.smartticket.ticket.dto.TicketQuery;
 import com.smartticket.ticket.entity.Ticket;
 import com.smartticket.ticket.entity.TicketLog;
+import com.smartticket.ticket.entity.TicketSolution;
 import com.smartticket.ticket.enums.Category;
 import com.smartticket.ticket.enums.Priority;
 import com.smartticket.ticket.enums.TicketStatus;
@@ -23,6 +28,7 @@ import com.smartticket.ticket.service.TicketService;
 import com.smartticket.ticket.vo.SubmitResultVO;
 import com.smartticket.ticket.vo.TicketDetailVO;
 import com.smartticket.ticket.vo.TicketListItemVO;
+import com.smartticket.ticket.vo.TodoVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,6 +154,133 @@ public class TicketServiceImpl implements TicketService {
         vo.setTimeline(ticketLogMapper.selectTimeline(id));
         vo.setSolutions(ticketSolutionMapper.selectByTicket(id));
         return vo;
+    }
+
+    @Override
+    public TodoVO getTodo(Long engineerId) {
+        TodoVO.Stats s = new TodoVO.Stats();
+        s.setPending(ticketMapper.selectCount(
+                new LambdaQueryWrapper<Ticket>().eq(Ticket::getStatus, TicketStatus.PENDING.name())));
+        s.setProcessing(ticketMapper.selectCount(new LambdaQueryWrapper<Ticket>()
+                .eq(Ticket::getAssigneeId, engineerId)
+                .eq(Ticket::getStatus, TicketStatus.PROCESSING.name())));
+        s.setDoneToday(ticketMapper.selectCount(new LambdaQueryWrapper<Ticket>()
+                .eq(Ticket::getAssigneeId, engineerId)
+                .in(Ticket::getStatus, TicketStatus.DONE.name(), TicketStatus.RATED.name())
+                .ge(Ticket::getUpdateTime, LocalDate.now().atStartOfDay())));
+        Double mins = ticketMapper.selectAvgHandleMinutes(engineerId);
+        s.setAvgHours(mins == null ? 0d : Math.round(mins / 6.0) / 10.0); // 小时保留 1 位小数
+
+        TodoVO vo = new TodoVO();
+        vo.setStats(s);
+        vo.setList(ticketMapper.selectTodoList(engineerId).stream().map(this::toListItem).toList());
+        return vo;
+    }
+
+    @Override
+    public List<SimilarTicket> handleReference(Long ticketId) {
+        Ticket t = load(ticketId);
+        return ticketMapper.selectSimilar(t.getCategory(), null, 5);
+    }
+
+    @Override
+    @Transactional
+    public void accept(Long ticketId, Long engineerId) {
+        Ticket t = load(ticketId);
+        // 待派单→处理中，占派为本人；乐观锁保证并发抢单只成功一次
+        transition(t, TicketStatus.PROCESSING, "接单", engineerId, engineerId, true, "工程师接单，开始处理");
+    }
+
+    @Override
+    @Transactional
+    public void submitSolution(Long ticketId, Long userId, String role, SolutionSubmitRequest req) {
+        Ticket t = load(ticketId);
+        requireAssigneeOrAdmin(t, userId, role);
+        // 先写解决方案，再流转；同事务，非法流转会一并回滚
+        TicketSolution sol = new TicketSolution();
+        sol.setTicketId(ticketId);
+        sol.setEngineerId(userId);
+        sol.setSolutionText(req.getSolutionText());
+        sol.setImageUrl(req.getImageUrl());
+        ticketSolutionMapper.insert(sol);
+        transition(t, TicketStatus.ACCEPTING, "提交完成", userId, null, false, "工程师提交解决方案，待验收");
+    }
+
+    @Override
+    @Transactional
+    public void reassign(Long ticketId, Long userId, String role, RemarkRequest req) {
+        Ticket t = load(ticketId);
+        requireAssigneeOrAdmin(t, userId, role);
+        String reason = req != null && StringUtils.hasText(req.getReason())
+                ? req.getReason() : "工程师转派，退回待派单";
+        // 处理中→待派单，清空受理人（touchAssignee=true, newAssignee=null）
+        transition(t, TicketStatus.PENDING, "转派", userId, null, true, reason);
+    }
+
+    @Override
+    @Transactional
+    public void verifyPass(Long ticketId, Long userId, String role) {
+        Ticket t = load(ticketId);
+        requireCreatorOrAdmin(t, userId, role);
+        transition(t, TicketStatus.DONE, "验收通过", userId, null, false, "报修人验收通过");
+    }
+
+    @Override
+    @Transactional
+    public void verifyReject(Long ticketId, Long userId, String role, RemarkRequest req) {
+        Ticket t = load(ticketId);
+        requireCreatorOrAdmin(t, userId, role);
+        String reason = req != null && StringUtils.hasText(req.getReason())
+                ? req.getReason() : "报修人验收驳回，退回处理中";
+        transition(t, TicketStatus.PROCESSING, "验收驳回", userId, null, false, reason);
+    }
+
+    /**
+     * 状态机核心（B1）：校验合法流转 → 乐观锁更新状态(+受理人) → 同事务写日志（B2）。
+     * 非法流转与并发冲突均抛 CONFLICT。调用方须处于 @Transactional 中。
+     */
+    private void transition(Ticket t, TicketStatus target, String action, Long operatorId,
+                            Long newAssignee, boolean touchAssignee, String remark) {
+        TicketStatus cur = TicketStatus.valueOf(t.getStatus());
+        if (!cur.canTransferTo(target)) {
+            throw new BizException(ResultCode.CONFLICT,
+                    "非法状态流转：" + cur.getLabel() + " → " + target.getLabel());
+        }
+        LambdaUpdateWrapper<Ticket> uw = new LambdaUpdateWrapper<Ticket>()
+                .eq(Ticket::getId, t.getId())
+                .eq(Ticket::getVersion, t.getVersion()) // 乐观锁：并发只成功一次
+                .set(Ticket::getStatus, target.name())
+                .setSql("version = version + 1");
+        if (touchAssignee) {
+            uw.set(Ticket::getAssigneeId, newAssignee);
+        }
+        int rows = ticketMapper.update(null, uw);
+        if (rows == 0) {
+            throw new BizException(ResultCode.CONFLICT, "工单状态已变化，请刷新后重试");
+        }
+        writeLog(t.getId(), action, operatorId, remark);
+    }
+
+    private Ticket load(Long id) {
+        Ticket t = ticketMapper.selectById(id);
+        if (t == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "工单不存在");
+        }
+        return t;
+    }
+
+    private void requireAssigneeOrAdmin(Ticket t, Long userId, String role) {
+        if ("ADMIN".equals(role)) return;
+        if (userId == null || !userId.equals(t.getAssigneeId())) {
+            throw new BizException(ResultCode.FORBIDDEN, "只能操作本人受理的工单");
+        }
+    }
+
+    private void requireCreatorOrAdmin(Ticket t, Long userId, String role) {
+        if ("ADMIN".equals(role)) return;
+        if (userId == null || !userId.equals(t.getCreatorId())) {
+            throw new BizException(ResultCode.FORBIDDEN, "只能验收本人提交的工单");
+        }
     }
 
     private static String statusLabel(String code) {

@@ -13,6 +13,27 @@ import java.util.List;
 @Mapper
 public interface TicketMapper extends BaseMapper<Ticket> {
 
+    /**
+     * 工程师待办：待接单(PENDING，任何人可抢) + 本人处理中/待验收，
+     * 按优先级(高→低，null 最后)、创建时间升序。
+     */
+    @Select("""
+            SELECT * FROM ticket
+            WHERE deleted = 0
+              AND ( status = 'PENDING'
+                    OR (assignee_id = #{engineerId} AND status IN ('PROCESSING', 'ACCEPTING')) )
+            ORDER BY FIELD(priority, 'LOW', 'MID', 'HIGH') DESC, create_time ASC
+            """)
+    List<Ticket> selectTodoList(@Param("engineerId") Long engineerId);
+
+    /** 本人已完成工单的平均处理时长（分钟；无数据返回 null）。 */
+    @Select("""
+            SELECT AVG(TIMESTAMPDIFF(MINUTE, create_time, update_time))
+            FROM ticket
+            WHERE deleted = 0 AND assignee_id = #{engineerId} AND status IN ('DONE', 'RATED')
+            """)
+    Double selectAvgHandleMinutes(@Param("engineerId") Long engineerId);
+
     /** 工单详情表头（关联报修人/受理人姓名；标签与时间线在服务层补齐）。 */
     @Select("""
             SELECT t.id, t.ticket_no AS ticketNo, t.title, t.content, t.image_url AS imageUrl,

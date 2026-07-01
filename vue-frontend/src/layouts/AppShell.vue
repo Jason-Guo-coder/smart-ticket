@@ -104,7 +104,7 @@ const NAV = {
     { path: '/app/tickets', label: '我的工单', icon: 'List' }
   ],
   ENGINEER: [
-    { path: '/app/home', label: '待办工单', icon: 'Files' },
+    { path: '/app/todo', label: '待办工单', icon: 'Files' },
     { path: '/app/home', label: '我的绩效', icon: 'TrendCharts' }
   ],
   ADMIN: [

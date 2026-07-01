@@ -32,6 +32,18 @@
         </div>
       </div>
 
+      <!-- 报修人验收（待验收时） -->
+      <div v-if="canVerify" class="glass-card verify">
+        <div class="verify__text">
+          <strong>工程师已提交解决方案</strong>
+          <span>请确认问题是否已解决</span>
+        </div>
+        <div class="verify__acts">
+          <el-button :loading="verifying" @click="onReject">驳回</el-button>
+          <el-button type="primary" :loading="verifying" @click="onPass">验收通过</el-button>
+        </div>
+      </div>
+
       <!-- 问题描述 -->
       <div class="glass-card block">
         <h3>问题描述</h3>
@@ -84,16 +96,24 @@
 <script setup>
 import { computed, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ticketDetail } from '@/api/ticket'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ticketDetail, verifyPass, verifyReject } from '@/api/ticket'
 import { statusMeta, slaMeta } from '@/utils/ticket'
 import StateLoading from '@/components/state/StateLoading.vue'
 import StateEmpty from '@/components/state/StateEmpty.vue'
 import StateError from '@/components/state/StateError.vue'
 
 const route = useRoute()
+const role = localStorage.getItem('role') || 'EMPLOYEE'
 const d = ref({})
 const status = ref('loading') // loading | ready | error
 const errText = ref('工单详情加载失败，请稍后再试')
+const verifying = ref(false)
+
+// 待验收且本人报修 / 管理员 → 可验收（后端再校验 creator/admin）
+const canVerify = computed(
+  () => d.value.status === 'ACCEPTING' && (role === 'EMPLOYEE' || role === 'ADMIN')
+)
 
 // 每秒刷新，驱动 SLA 倒计时
 const nowTick = ref(Date.now())
@@ -117,6 +137,38 @@ async function load() {
     const m = e?.message
     errText.value = m && !/^Request failed/.test(m) ? m : '工单详情加载失败，请稍后再试'
     status.value = 'error'
+  }
+}
+
+async function onPass() {
+  verifying.value = true
+  try {
+    await verifyPass(route.params.id)
+    ElMessage.success('已验收通过')
+    await load()
+  } catch (e) {
+    // request.js 已提示；刷新以反映最新状态
+    await load()
+  } finally {
+    verifying.value = false
+  }
+}
+
+async function onReject() {
+  try {
+    const { value } = await ElMessageBox.prompt('请填写驳回原因（可选）', '验收驳回', {
+      confirmButtonText: '确认驳回',
+      cancelButtonText: '取消',
+      inputPlaceholder: '如：问题仍未解决'
+    })
+    verifying.value = true
+    await verifyReject(route.params.id, { reason: value || undefined })
+    ElMessage.success('已驳回，退回处理中')
+    await load()
+  } catch (e) {
+    if (e !== 'cancel') await load()
+  } finally {
+    verifying.value = false
   }
 }
 
@@ -217,6 +269,30 @@ load()
 .block h3 {
   font-size: 16px;
   margin-bottom: 14px;
+}
+.verify {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border: 1px solid rgba(175, 82, 222, 0.3);
+  background: linear-gradient(160deg, rgba(245, 237, 255, 0.9), rgba(237, 242, 255, 0.85));
+}
+.verify__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.verify__text strong {
+  font-size: 15px;
+}
+.verify__text span {
+  font-size: 12px;
+  color: var(--apple-darkgray);
+}
+.verify__acts {
+  display: flex;
+  gap: 12px;
 }
 .content {
   font-size: 14px;
